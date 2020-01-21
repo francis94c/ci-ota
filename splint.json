@@ -1,0 +1,21 @@
+{
+  "name": "francis94c/ci-ota",
+  "type": "library",
+  "description": "Contnuous Delivery System for Code Igniter.",
+  "tags": [],
+  "page": "https://github.com/francis94c/ci-ota",
+  "authors": [
+    {
+      "name": "Francis Ilechukwu",
+      "email": "francis94c@gmail.com",
+      "page": "about.me/francisilechukwu",
+      "role": "Developer"
+    }
+  ],
+  "php": ">=7.3",
+  "autoload": {
+    "libraries" : [
+      ["OTA", "@ota", "ota"]
+    ]
+  }
+}
