@@ -1,8 +1,6 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-require_once('Builder.php');
-
 class OTA
 {
   /**
@@ -10,6 +8,18 @@ class OTA
    * @var [type]
    */
   const BUILD_DIR = FCPATH.'ota_build/';
+
+  /**
+   * [PATCH_NAME description]
+   * @var string
+   */
+  const PATCH_NAME = 'ota_patch';
+
+  /**
+   * [PATCH_FILE description]
+   * @var [type]
+   */
+  const PATCH_FILE = self::BUILD_DIR.self::PATCH_NAME.'.zip';
 
   /**
    * Secret signing key.
@@ -55,6 +65,39 @@ class OTA
       '\..+',
       'readme.md'
     ]);
+  }
+
+  /**
+   * [upload description]
+   * @date   2020-01-21
+   * @param  string     $url [description]
+   * @return bool            [description]
+   */
+  public function upload(string $url):bool
+  {
+    // This could cause issues if absent.
+    $url = rtrim($url, '/');
+    $url .= '/';
+
+    if (is_file(self::PATCH_FILE)) {
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_URL,$url);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, [
+        'signature' => hash_hmac_file($this->algorithm, self::PATCH_FILE, $this->secret),
+        'patch'     => function_exists('curl_file_create') ? curl_file_create(self::PATCH_FILE) : '@'.realpath(self::PATCH_FILE)
+      ]);
+
+      curl_exec($ch);
+      $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      var_dump($code);
+      curl_close ($ch);
+
+      return $code >= 200 && $code <= 299;
+    }
+    
+    return false;
   }
 
   /**
@@ -110,7 +153,7 @@ class OTA
 
     $zip = new ZipArchive();
 
-    if ($zip->open(self::BUILD_DIR.'ota_patch.zip', ZipArchive::CREATE) === true) {
+    if ($zip->open(self::BUILD_DIR.self::PATCH_NAME.'.zip', ZipArchive::CREATE) === true) {
       foreach ($changelist as $file) {
         $this->print("Zipping $file ...");
         $zip->addFile($file, basename($file));
@@ -126,7 +169,7 @@ class OTA
       $zip->close();
 
       $this->print("Done!");
-      $this->print('Output: '.self::BUILD_DIR.'ota_patch.zip');
+      $this->print('Output: '.self::BUILD_DIR.self::PATCH_NAME.'.zip');
 
       return true;
     }
