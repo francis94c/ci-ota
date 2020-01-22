@@ -63,8 +63,49 @@ class OTA
 
     $this->excludes = array_merge($this->excludes, [
       '\..+',
-      'readme.md'
+      'readme.md',
+      '.+manifest\.json.+'
     ]);
+  }
+
+  /**
+   * [patch description]
+   * @date   2020-01-21
+   * @return bool       [description]
+   */
+  public function patch():bool
+  {
+    $this->prepare_build_directory();
+
+    $config['upload_path'] = './ota_build/';
+		$config['allowed_types'] = 'zip';
+		$config['max_size']     = '5120';
+
+		get_instance()->load->library('upload', $config);
+
+		if (!get_instance()->upload->do_upload('patch')) return false;
+
+    $signature = hash_hmac_file($this->algorithm, self::PATCH_FILE, $this->secret);
+
+    if (get_instance()->input->post('signature', true) !== $signature) return false;
+
+    $zip = new ZipArchive();
+
+    $zip->open(self::PATCH_FILE);
+
+    $zip->extractTo(self::BUILD_DIR);
+
+    $manifest = json_decode(file_get_contents(self::BUILD_DIR.'manifest.json'));
+
+    foreach ($manifest->manifest as $source => $destination) {
+      if (!file_exists(FCPATH.pathinfo($destination)['dirname'])) {
+        mkdir(FCPATH.pathinfo($destination)['dirname'], 0777, true);
+      }
+
+      @copy(self::BUILD_DIR.$source, FCPATH.$destination);
+    }
+
+    return true;
   }
 
   /**
@@ -96,7 +137,7 @@ class OTA
 
       return $code >= 200 && $code <= 299;
     }
-    
+
     return false;
   }
 
