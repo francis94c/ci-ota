@@ -11,7 +11,7 @@ Download and Install Splint from https://splint.cynobit.com/downloads/splint and
 splint install francis94c/ci-ota
 ```
 
-## How It Works ##
+## How It Works/How to Use ##
 
 Let's say you have two copies of a particular Code Igniter project, One in your System (Local Development Environment) and one in your Remote Server (Production Environment). And you have the `ci-ota` library installed in both of them.
 
