@@ -44,7 +44,7 @@ class OTA
   {
     if ($params != null) {
       $this->secret = $params['secret'] ?? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      $this->algorithm = $params['algorithm'] ?? 'sha256';
+      $this->algorithm = $params['algorithm'] ?? 'sha1';
       $this->excludes = $params['excludes'] ?? [];
     }
 
@@ -70,11 +70,16 @@ class OTA
 
   /**
    * [patch description]
-   * @date   2020-01-21
-   * @return bool       [description]
+   * @date   2020-01-24
+   * @param  [type]     $secret    [description]
+   * @param  [type]     $algorithm [description]
+   * @return bool                  [description]
    */
-  public function patch():bool
+  public function patch(string $secret=null, string $algorithm=null):bool
   {
+    $secret = $secret ?? $this->secret;
+    $algorithm = $algorithm ?? $this->algorithm;
+
     $this->prepare_build_directory();
 
     $config['upload_path'] = './ota_build/';
@@ -85,7 +90,7 @@ class OTA
 
 		if (!get_instance()->upload->do_upload('patch')) return false;
 
-    $signature = hash_hmac_file($this->algorithm, self::PATCH_FILE, $this->secret);
+    $signature = hash_hmac_file($algorithm, self::PATCH_FILE, $secret);
 
     if (get_instance()->input->post('signature', true) !== $signature) return false;
 
@@ -110,12 +115,17 @@ class OTA
 
   /**
    * [upload description]
-   * @date   2020-01-21
-   * @param  string     $url [description]
-   * @return bool            [description]
+   * @date   2020-01-24
+   * @param  string     $url       [description]
+   * @param  [type]     $secret    [description]
+   * @param  [type]     $algorithm [description]
+   * @return bool                  [description]
    */
-  public function upload(string $url):bool
+  public function upload(string $url, string $secret=null, string $algorithm=null):bool
   {
+    $secret = $secret ?? $this->secret;
+    $algorithm = $algorithm ?? $this->algorithm;
+
     // This could cause issues if absent.
     $url = rtrim($url, '/');
     $url .= '/';
@@ -126,13 +136,12 @@ class OTA
       curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
       curl_setopt($ch, CURLOPT_POSTFIELDS, [
-        'signature' => hash_hmac_file($this->algorithm, self::PATCH_FILE, $this->secret),
+        'signature' => hash_hmac_file($algorithm, self::PATCH_FILE, $secret),
         'patch'     => function_exists('curl_file_create') ? curl_file_create(self::PATCH_FILE) : '@'.realpath(self::PATCH_FILE)
       ]);
 
       curl_exec($ch);
       $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      var_dump($code);
       curl_close ($ch);
 
       return $code >= 200 && $code <= 299;
