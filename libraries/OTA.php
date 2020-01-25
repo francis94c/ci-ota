@@ -83,12 +83,11 @@ class OTA
     $this->prepare_build_directory();
 
     $config['upload_path'] = './ota_build/';
-		$config['allowed_types'] = 'zip';
-		$config['max_size']     = '5120';
+    $config['allowed_types'] = 'zip';
+    $config['max_size']     = '5120';
+    get_instance()->load->library('upload', $config);
 
-		get_instance()->load->library('upload', $config);
-
-		if (!get_instance()->upload->do_upload('patch')) return false;
+    if (!get_instance()->upload->do_upload('patch')) return false;
 
     $signature = hash_hmac_file($algorithm, self::PATCH_FILE, $secret);
 
